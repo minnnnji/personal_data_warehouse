@@ -12,7 +12,7 @@ from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from db import (
+from backend.db import (
     delete_file_record,
     get_all_files,
     get_all_tags,
@@ -23,7 +23,7 @@ from db import (
     save_file_metadata,
     update_file_metadata,
 )
-from file_handler import (
+from backend.file_handler import (
     TEMP_DIR,
     convert_and_save,
     get_sample_data,
@@ -31,8 +31,8 @@ from file_handler import (
     save_file,
     save_result_df,
 )
-from llm_service import generate_combine_code, generate_metadata, search_files
-from schemas import CombineRequest, ConfirmUploadRequest, QueryRequest
+from backend.llm_service import generate_combine_code, generate_metadata, search_files
+from backend.schemas import CombineRequest, ConfirmUploadRequest, QueryRequest
 
 load_dotenv()
 
