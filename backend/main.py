@@ -594,6 +594,10 @@ def meta_tags():
 app.include_router(api_router)
 
 # React 빌드 정적 파일 서빙 (API 라우터 등록 이후 맨 마지막에)
-_dist = Path(__file__).parent.parent / "web" / "dist"
+# 개발: web/dist/, 배포(zip 압축 후): dist/ 두 경로 모두 지원
+_root = Path(__file__).parent.parent
+_dist = _root / "web" / "dist"
+if not _dist.exists():
+    _dist = _root / "dist"
 if _dist.exists():
     app.mount("/", StaticFiles(directory=str(_dist), html=True), name="static")
