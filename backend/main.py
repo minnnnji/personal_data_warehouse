@@ -61,6 +61,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 모든 API 라우트를 /api 하위에 마운트하기 위한 서브 앱
+from fastapi import APIRouter
+api_router = APIRouter(prefix="/api")
+
 # 업로드 확정 전 임시 저장 (프로세스 메모리)
 _pending: dict = {}
 
@@ -82,7 +86,7 @@ def startup():
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-@app.post("/upload", summary="파일 업로드 + LLM 메타데이터 자동 생성")
+@api_router.post("/upload", summary="파일 업로드 + LLM 메타데이터 자동 생성")
 async def upload_file(file: UploadFile = File(...)):
     content = await file.read()
     file_id = str(uuid.uuid4())[:8]
@@ -162,7 +166,7 @@ async def upload_file(file: UploadFile = File(...)):
     }
 
 
-@app.post("/upload/confirm", summary="메타데이터 확정 후 DB 저장")
+@api_router.post("/upload/confirm", summary="메타데이터 확정 후 DB 저장")
 def confirm_upload(req: ConfirmUploadRequest):
     if req.file_id not in _pending:
         raise HTTPException(404, "대기 중인 업로드를 찾을 수 없습니다 (이미 저장됐거나 만료)")
@@ -238,7 +242,7 @@ def confirm_upload(req: ConfirmUploadRequest):
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-@app.get("/files", summary="파일 목록 조회 (필터 지원)")
+@api_router.get("/files", summary="파일 목록 조회 (필터 지원)")
 def list_files(
     category: Optional[str] = Query(None),
     tag: Optional[str] = Query(None),
@@ -247,7 +251,7 @@ def list_files(
     return get_all_files(category=category, tag=tag, project=project)
 
 
-@app.get("/files/{file_id}", summary="파일 메타데이터 상세 조회")
+@api_router.get("/files/{file_id}", summary="파일 메타데이터 상세 조회")
 def get_file(file_id: str):
     f = get_file_by_id(file_id)
     if not f:
@@ -255,7 +259,7 @@ def get_file(file_id: str):
     return f
 
 
-@app.put("/files/{file_id}", summary="파일 메타데이터 수정")
+@api_router.put("/files/{file_id}", summary="파일 메타데이터 수정")
 def update_file(file_id: str, req: ConfirmUploadRequest):
     f = get_file_by_id(file_id)
     if not f:
@@ -274,7 +278,7 @@ def update_file(file_id: str, req: ConfirmUploadRequest):
     return {"success": True}
 
 
-@app.patch("/files/{file_id}", summary="파일 메타데이터 부분 수정")
+@api_router.patch("/files/{file_id}", summary="파일 메타데이터 부분 수정")
 def patch_file(file_id: str, body: dict):
     f = get_file_by_id(file_id)
     if not f:
@@ -286,7 +290,7 @@ def patch_file(file_id: str, body: dict):
     return {"success": True}
 
 
-@app.get("/files/{file_id}/preview", summary="파일 내용 테이블 미리보기 (최대 100행)")
+@api_router.get("/files/{file_id}/preview", summary="파일 내용 테이블 미리보기 (최대 100행)")
 def preview_file(file_id: str, limit: int = 100):
     f = get_file_by_id(file_id)
     if not f:
@@ -306,7 +310,7 @@ def preview_file(file_id: str, limit: int = 100):
         raise HTTPException(500, f"미리보기 실패: {e}")
 
 
-@app.get("/files/{file_id}/download", summary="파일 다운로드 (포맷 변환 지원)")
+@api_router.get("/files/{file_id}/download", summary="파일 다운로드 (포맷 변환 지원)")
 def download_file(file_id: str, format: str = Query("csv")):
     f = get_file_by_id(file_id)
     if not f:
@@ -334,7 +338,7 @@ def download_file(file_id: str, format: str = Query("csv")):
         raise HTTPException(500, f"변환 실패: {e}")
 
 
-@app.delete("/files/{file_id}", summary="파일 삭제 (파일 + DB 기록)")
+@api_router.delete("/files/{file_id}", summary="파일 삭제 (파일 + DB 기록)")
 def delete_file(file_id: str):
     f = get_file_by_id(file_id)
     if not f:
@@ -349,7 +353,7 @@ def delete_file(file_id: str):
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-@app.post("/query", summary="자연어로 파일 검색")
+@api_router.post("/query", summary="자연어로 파일 검색")
 def query_files(req: QueryRequest):
     all_files = get_all_files()
     if not all_files:
@@ -374,7 +378,7 @@ def query_files(req: QueryRequest):
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-@app.post("/combine", summary="자연어 명령으로 파일 결합 (LLM pandas 코드 생성)")
+@api_router.post("/combine", summary="자연어 명령으로 파일 결합 (LLM pandas 코드 생성)")
 def combine_files(req: CombineRequest):
     if len(req.file_ids) < 1:
         raise HTTPException(400, "최소 1개 파일을 선택해야 합니다")
@@ -431,7 +435,7 @@ def combine_files(req: CombineRequest):
     }
 
 
-@app.post("/combine/save", summary="결합 결과를 창고에 저장")
+@api_router.post("/combine/save", summary="결합 결과를 창고에 저장")
 def save_combine_result(req: dict):
     result_id = req.get("result_id")
     if not result_id:
@@ -485,7 +489,7 @@ def save_combine_result(req: dict):
     return get_file_by_id(new_id)
 
 
-@app.get("/combine/{result_id}/download", summary="결합 결과 파일 다운로드")
+@api_router.get("/combine/{result_id}/download", summary="결합 결과 파일 다운로드")
 def download_result(result_id: str, format: str = Query("csv")):
     result_path = TEMP_DIR / f"{result_id}.pkl"
     if not result_path.exists():
@@ -507,7 +511,7 @@ def download_result(result_id: str, format: str = Query("csv")):
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-@app.get("/lineage", summary="데이터 계보 그래프 (JSON 노드+엣지)")
+@api_router.get("/lineage", summary="데이터 계보 그래프 (JSON 노드+엣지)")
 def get_lineage():
     records = get_all_lineage()
     all_file_ids: set = set()
@@ -540,12 +544,12 @@ def get_lineage():
     return {"nodes": nodes, "edges": edges}
 
 
-@app.get("/convention", summary="네이밍 컨벤션 목록 (flat)")
+@api_router.get("/convention", summary="네이밍 컨벤션 목록 (flat)")
 def get_convention():
     return get_conventions_flat()
 
 
-@app.post("/convention", summary="네이밍 컨벤션 항목 추가")
+@api_router.post("/convention", summary="네이밍 컨벤션 항목 추가")
 def add_convention_item(req: ConventionAddRequest):
     if req.field not in ("domain", "data_type", "stage"):
         raise HTTPException(400, "field는 domain, data_type, stage 중 하나여야 합니다")
@@ -560,7 +564,7 @@ def add_convention_item(req: ConventionAddRequest):
     }
 
 
-@app.delete("/convention/{convention_id}", summary="네이밍 컨벤션 항목 삭제")
+@api_router.delete("/convention/{convention_id}", summary="네이밍 컨벤션 항목 삭제")
 def delete_convention_item(convention_id: int):
     delete_convention(convention_id)
     return {"success": True}
@@ -571,20 +575,23 @@ def delete_convention_item(convention_id: int):
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-@app.get("/meta/categories")
+@api_router.get("/meta/categories")
 def meta_categories():
     return get_distinct_categories()
 
 
-@app.get("/meta/projects")
+@api_router.get("/meta/projects")
 def meta_projects():
     return get_distinct_projects()
 
 
-@app.get("/meta/tags")
+@api_router.get("/meta/tags")
 def meta_tags():
     return get_all_tags()
 
+
+# /api/* 라우터를 app에 등록
+app.include_router(api_router)
 
 # React 빌드 정적 파일 서빙 (API 라우터 등록 이후 맨 마지막에)
 _dist = Path(__file__).parent.parent / "web" / "dist"
