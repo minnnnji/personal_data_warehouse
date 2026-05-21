@@ -25,4 +25,5 @@ pip install --no-index --find-links=packages\ -r requirements.txt
 
 echo.
 echo Done! Run start.bat to launch the app.
+echo App will be available at http://localhost:8000
 pause

@@ -10,17 +10,12 @@ if not exist .env (
 
 call venv\Scripts\activate.bat
 
-echo Starting backend (http://localhost:8000) ...
-start "Backend" cmd /c "call venv\Scripts\activate.bat && uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload"
-
-timeout /t 2 /nobreak >nul
-
-echo Starting frontend (http://localhost:8501) ...
-start "Frontend" cmd /c "call venv\Scripts\activate.bat && streamlit run frontend\app.py --server.port 8501"
+echo Starting server (http://localhost:8000) ...
+start "DataWarehouse" cmd /c "call venv\Scripts\activate.bat && uvicorn backend.main:app --host 0.0.0.0 --port 8000"
 
 echo.
 echo Running!
-echo   Backend API: http://localhost:8000/docs
-echo   Frontend:    http://localhost:8501
+echo   App:     http://localhost:8000
+echo   API docs: http://localhost:8000/docs
 echo.
 pause

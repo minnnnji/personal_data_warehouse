@@ -23,6 +23,8 @@ class FileMetadata(BaseModel):
     upload_date: str
     project_name: str
     file_size: int
+    standardized_name: Optional[str] = None
+    product_name: Optional[str] = None
 
 
 class UploadResponse(BaseModel):
@@ -30,6 +32,7 @@ class UploadResponse(BaseModel):
     metadata: FileMetadata
     uncertain: bool
     question_for_user: Optional[str] = None
+    pkl_count: Optional[int] = None
 
 
 class ConfirmUploadRequest(BaseModel):
@@ -38,6 +41,8 @@ class ConfirmUploadRequest(BaseModel):
     description: str
     tags: List[str]
     project_name: str
+    standardized_name: Optional[str] = None
+    product_name: Optional[str] = None
     user_answer: Optional[str] = None
 
 
@@ -48,3 +53,9 @@ class QueryRequest(BaseModel):
 class CombineRequest(BaseModel):
     file_ids: List[str]
     command: str
+
+
+class ConventionAddRequest(BaseModel):
+    field: str   # 'domain' | 'data_type' | 'stage'
+    value: str
+    description: Optional[str] = ""

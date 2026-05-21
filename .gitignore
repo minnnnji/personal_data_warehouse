@@ -8,6 +8,7 @@ env/
 
 # 업로드된 실제 파일들 (용량 큼)
 storage/
+packages/
 
 # SQLite DB (로컬 데이터)
 warehouse.db
@@ -30,3 +31,8 @@ __pycache__/
 
 # 로그
 *.log
+*.zip
+
+# React 프론트엔드
+web/node_modules/
+web/dist/

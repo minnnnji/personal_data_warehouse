@@ -13,14 +13,24 @@ if not exist .env (
     echo Fill in .env before transferring to the offline server.
 )
 
+echo [Step 1/2] Building React frontend...
+cd web
+call npm run build
+if errorlevel 1 (
+    echo ERROR: React build failed.
+    pause
+    exit /b 1
+)
+cd ..
+
 set ZIPNAME=personal_data_warehouse.zip
 
 if exist %ZIPNAME% del %ZIPNAME%
 
-echo Creating %ZIPNAME% ...
+echo [Step 2/2] Creating %ZIPNAME% ...
 
 powershell -Command ^
-  "Compress-Archive -Path 'backend','frontend','packages','requirements.txt','setup_offline.bat','start.bat' -DestinationPath '%ZIPNAME%' -Force"
+  "Compress-Archive -Path 'backend','web\dist','packages','requirements.txt','setup_offline.bat','start.bat' -DestinationPath '%ZIPNAME%' -Force"
 
 if exist .env (
     powershell -Command ^
