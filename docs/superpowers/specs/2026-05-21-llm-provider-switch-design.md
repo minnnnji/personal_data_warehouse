@@ -50,7 +50,8 @@ INTERNAL_LLM_API_KEY=your-api-key
 }
 ```
 
-**Response:** `response["output"]["content"]`에 최종 텍스트 답변이 담긴다.
+**Response:** `response["output"]["content"]`에 최종 텍스트 답변이 담긴다.  
+> ⚠️ API 문서 기준 `output.content` 타입이 Object로 명시되어 있어, 실제 텍스트 추출 경로(`["content"]` 직접 접근인지, 내부 하위 키가 있는지)는 구현 시 실제 응답을 확인해 결정한다.
 
 ---
 
