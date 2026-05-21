@@ -126,12 +126,7 @@ def generate_metadata(
 - uncertain을 true로 설정
 - question_for_user에 사용자에게 물어볼 구체적인 질문을 한국어로 작성"""
 
-    response = get_client().messages.create(
-        model=MODEL,
-        max_tokens=1024,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    return _extract_json(response.content[0].text)
+    return _extract_json(_call_llm(prompt, max_tokens=1024))
 
 
 def search_files(query: str, all_metadata: List[Dict[str, Any]]) -> str:
@@ -160,12 +155,7 @@ def search_files(query: str, all_metadata: List[Dict[str, Any]]) -> str:
 관련 있는 파일들을 찾아 한국어로 답변하세요. 각 파일이 왜 관련 있는지 구체적으로 설명하고, 파일 ID (id 필드)도 함께 명시해주세요.
 관련 파일이 없다면 그렇게 알려주세요. 답변은 마크다운 형식으로 작성하세요."""
 
-    response = get_client().messages.create(
-        model=MODEL,
-        max_tokens=2048,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    return response.content[0].text
+    return _call_llm(prompt, max_tokens=2048)
 
 
 def generate_combine_code(
@@ -201,12 +191,7 @@ def generate_combine_code(
 
 코드:"""
 
-    response = get_client().messages.create(
-        model=MODEL,
-        max_tokens=2048,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    code = response.content[0].text.strip()
+    code = _call_llm(prompt, max_tokens=2048).strip()
     # 코드 블록 마크다운 제거
     if "```python" in code:
         code = code.split("```python")[1].split("```")[0].strip()

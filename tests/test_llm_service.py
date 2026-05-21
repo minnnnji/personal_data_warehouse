@@ -158,3 +158,86 @@ def test_call_internal_llm_http_error_propagates(monkeypatch):
     with patch("httpx.post", return_value=mock_response):
         with pytest.raises(httpx.HTTPStatusError):
             _call_internal_llm("hello")
+
+
+# ── public 함수 테스트 ─────────────────────────────────────────────
+
+MOCK_METADATA_RESPONSE = json.dumps({
+    "description": "테스트 데이터",
+    "category": "품질",
+    "tags": ["lot_id"],
+    "project_guess": "",
+    "uncertain": False,
+    "question_for_user": "",
+})
+
+
+def test_generate_metadata_calls_call_llm_with_filename_and_columns():
+    columns_info = [{"name": "lot_id", "dtype": "object"}, {"name": "cd", "dtype": "float64"}]
+    sample_rows = [{"lot_id": "L001", "cd": 1.23}]
+
+    with patch("backend.llm_service._call_llm", return_value=MOCK_METADATA_RESPONSE) as mock:
+        result = generate_metadata(columns_info, sample_rows, "test_file.csv")
+
+    assert mock.called
+    prompt = mock.call_args[0][0]
+    assert "test_file.csv" in prompt
+    assert "lot_id" in prompt
+    assert result["category"] == "품질"
+    assert result["tags"] == ["lot_id"]
+
+
+def test_generate_metadata_uses_max_tokens_1024():
+    columns_info = [{"name": "col", "dtype": "int64"}]
+    sample_rows = [{"col": 1}]
+
+    with patch("backend.llm_service._call_llm", return_value=MOCK_METADATA_RESPONSE) as mock:
+        generate_metadata(columns_info, sample_rows, "file.csv")
+
+    _, kwargs = mock.call_args
+    assert kwargs.get("max_tokens") == 1024
+
+
+def test_search_files_calls_call_llm_with_query():
+    all_metadata = [{
+        "id": "abc123",
+        "original_filename": "test.csv",
+        "category": "품질",
+        "description": "테스트",
+        "tags": ["lot_id"],
+        "project_name": "TestProject",
+        "columns_info": [{"name": "lot_id"}],
+        "row_count": 100,
+    }]
+
+    with patch("backend.llm_service._call_llm", return_value="관련 파일: test.csv") as mock:
+        result = search_files("lot_id 관련 파일", all_metadata)
+
+    assert mock.called
+    prompt = mock.call_args[0][0]
+    assert "lot_id 관련 파일" in prompt
+    assert result == "관련 파일: test.csv"
+
+
+def test_generate_combine_code_calls_call_llm_with_command():
+    files_info = [
+        {
+            "original_filename": "a.csv",
+            "columns_info": [{"name": "lot_id", "dtype": "object"}],
+            "row_count": 50,
+        },
+        {
+            "original_filename": "b.csv",
+            "columns_info": [{"name": "lot_id", "dtype": "object"}, {"name": "cd", "dtype": "float64"}],
+            "row_count": 80,
+        },
+    ]
+
+    with patch("backend.llm_service._call_llm", return_value="result_df = pd.merge(df_0, df_1, on='lot_id')") as mock:
+        result = generate_combine_code(files_info, "lot_id 기준으로 left join")
+
+    assert mock.called
+    prompt = mock.call_args[0][0]
+    assert "lot_id 기준으로 left join" in prompt
+    assert "df_0" in prompt
+    assert "result_df" in result
