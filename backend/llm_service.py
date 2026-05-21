@@ -78,13 +78,15 @@ def _call_internal_llm(prompt: str) -> str:
     response.raise_for_status()
     data = response.json()
 
-    content = data.get("output", {}).get("content")
+    output = data.get("output", {})
+    content = output.get("content")
     if content is None:
         raise ValueError(f"사내 LLM 응답에서 output.content를 찾을 수 없습니다: {data}")
     if isinstance(content, str):
         return content
     if isinstance(content, dict):
-        return content.get("text", str(content))
+        # 사내 LLM은 {"content": "...텍스트..."} 구조로 반환
+        return content.get("content") or content.get("text") or str(content)
     if isinstance(content, list):
         return "".join(
             block.get("text", "") if isinstance(block, dict) else str(block)
