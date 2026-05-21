@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(cd \"C:\\\\Users\\\\MR2025074\\\\Desktop\\\\작업폴더\\\\personal_data_warehouse\"; $env:PYTHONPATH=\".\"; C:\\\\Users\\\\MR2025074\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python311\\\\python.exe -m pytest tests/test_llm_service.py --collect-only 2>&1 | Select-Object -First 20)"
+    ]
+  }
+}

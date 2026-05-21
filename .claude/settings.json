@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Read(//c/Users/MR2025074/.claude/plugins/cache/claude-plugins-official/superpowers/5.1.0/skills/subagent-driven-development/**)",
+      "Bash(pip install *)",
+      "Bash(python -c \"import packaging.version; print\\('Version format valid:', packaging.version.Version\\('0.27.2'\\)\\)\")",
+      "PowerShell(cd \"C:\\\\Users\\\\MR2025074\\\\Desktop\\\\작업폴더\\\\personal_data_warehouse\"; $env:PYTHONPATH=\".\"; pytest tests/test_llm_service.py --collect-only 2>&1 | Select-Object -First 20)"
+    ]
+  }
+}
