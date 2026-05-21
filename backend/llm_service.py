@@ -31,7 +31,23 @@ def _extract_json(text: str) -> dict:
         text = text.split("```json")[1].split("```")[0].strip()
     elif "```" in text:
         text = text.split("```")[1].split("```")[0].strip()
-    return json.loads(text)
+
+    # 정상 파싱 시도
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # 싱글쿼트 Python dict 형식 대응 (일부 LLM이 {'key': 'value'} 형태로 반환)
+    try:
+        import ast
+        result = ast.literal_eval(text)
+        if isinstance(result, dict):
+            return result
+    except Exception:
+        pass
+
+    raise ValueError(f"LLM 응답을 JSON으로 파싱할 수 없습니다: {text[:200]}")
 
 
 def _call_internal_llm(prompt: str) -> str:
