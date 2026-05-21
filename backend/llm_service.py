@@ -3,6 +3,9 @@ import os
 from typing import List, Dict, Any, Optional
 
 import anthropic
+import httpx
+
+_INTERNAL_LLM_BASE_URL = "https://adxp.adotbiz.ai/api/v1/agent_gateway"
 
 _client: Optional[anthropic.Anthropic] = None
 MODEL = "claude-sonnet-4-6"
@@ -29,6 +32,67 @@ def _extract_json(text: str) -> dict:
     elif "```" in text:
         text = text.split("```")[1].split("```")[0].strip()
     return json.loads(text)
+
+
+def _call_internal_llm(prompt: str) -> str:
+    """사내 ADXP agent_gateway LLM API를 호출하고 텍스트 응답을 반환한다."""
+    agent_id = os.environ.get("INTERNAL_LLM_AGENT_ID")
+    api_key = os.environ.get("INTERNAL_LLM_API_KEY")
+    if not agent_id or not api_key:
+        raise RuntimeError(
+            "INTERNAL_LLM_AGENT_ID 또는 INTERNAL_LLM_API_KEY 환경변수가 설정되지 않았습니다."
+        )
+
+    url = f"{_INTERNAL_LLM_BASE_URL}/{agent_id}/invoke"
+    headers = {
+        "accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    body = {
+        "config": {},
+        "input": {
+            "messages": [{"content": prompt, "type": "human"}],
+            "additional_kwargs": {},
+        },
+        "kwargs": {},
+    }
+
+    response = httpx.post(url, headers=headers, json=body, timeout=60.0)
+    response.raise_for_status()
+    data = response.json()
+
+    content = data.get("output", {}).get("content")
+    if content is None:
+        raise ValueError(f"사내 LLM 응답에서 output.content를 찾을 수 없습니다: {data}")
+    if isinstance(content, str):
+        return content
+    if isinstance(content, dict):
+        return content.get("text", str(content))
+    if isinstance(content, list):
+        return "".join(
+            block.get("text", "") if isinstance(block, dict) else str(block)
+            for block in content
+        )
+    return str(content)
+
+
+def _call_llm(prompt: str, max_tokens: int = 2048) -> str:
+    """LLM_PROVIDER 환경변수에 따라 Anthropic 또는 사내 LLM을 호출한다."""
+    provider = os.environ.get("LLM_PROVIDER", "anthropic")
+    if provider == "internal":
+        return _call_internal_llm(prompt)
+    elif provider == "anthropic":
+        response = get_client().messages.create(
+            model=MODEL,
+            max_tokens=max_tokens,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return response.content[0].text
+    else:
+        raise ValueError(
+            f"알 수 없는 LLM_PROVIDER 값: '{provider}'. 'internal' 또는 'anthropic'만 허용됩니다."
+        )
 
 
 def generate_metadata(
