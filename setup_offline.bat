@@ -14,8 +14,8 @@ if not exist requirements.txt (
     exit /b 1
 )
 
-echo [Step 1/3] Creating virtual environment...
-python -m venv venv
+echo [Step 1/3] Creating virtual environment with Python 3.11...
+py -3.11 -m venv venv
 
 echo [Step 2/3] Activating virtual environment...
 call venv\Scripts\activate.bat

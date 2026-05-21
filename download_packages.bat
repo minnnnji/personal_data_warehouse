@@ -5,14 +5,14 @@ echo [Step 1/3] Cleaning old packages folder...
 if exist packages rmdir /s /q packages
 mkdir packages
 
-echo [Step 2/3] Downloading wheel packages (binary only, no source builds)...
-pip download -r requirements.txt -d packages\ --only-binary=:all:
+echo [Step 2/3] Downloading wheel packages for Python 3.11...
+py -3.11 -m pip download -r requirements.txt -d packages\ --only-binary=:all:
 
 if %errorlevel% neq 0 (
     echo.
-    echo ERROR: Some packages failed to download as wheels.
-    echo Retrying without --only-binary for those packages...
-    pip download -r requirements.txt -d packages\
+    echo ERROR: Some packages failed. Check Python 3.11 is installed.
+    pause
+    exit /b 1
 )
 
 echo [Step 3/3] Done!
